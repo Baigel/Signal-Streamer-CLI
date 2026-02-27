@@ -12,10 +12,10 @@ The Signal Streamer CLI provides a convenient way of generating a real time sign
  - Skip samples: only transmit every nth sample
 
 ## Buld
-Signal Streamer CLI:
+Signal Streamer CLI:\
 `cargo build --bin Signal-Streamer-CLI`
 
-Receiver Demo:
+Receiver Demo:\
 `cargo build --bin receive-demo`
 
 ## Usage
@@ -36,6 +36,6 @@ Options:
 ```
 
 ## Example
-Run the following commands in two separate terminals:
-`cargo build --bin Signal-Streamer-CLI -- -f ./Test-Signal.csv --int-mode`
-`cargo build --bin receive-demo`
+Run the following commands in two separate terminals:\
+`cargo build --bin Signal-Streamer-CLI -- -f ./Test-Signal.csv --int-mode`\
+`cargo build --bin receive-demo`\
