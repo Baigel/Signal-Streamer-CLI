@@ -58,7 +58,7 @@ impl Signal {
 
     // Methods
 
-    pub fn read_csv_file(&mut self, file_name: String) {
+    pub fn read_csv_file(&mut self, file_name: String) { // TODO: need to add support for more separators
         let mut rdr = csv::Reader::from_path(file_name).expect("ERR: Expected csv");
         for result in rdr.records() {
             let record: csv::StringRecord = result.expect("ERR: Expected csv");
@@ -137,11 +137,11 @@ impl Signal {
 
         // Order of operations note: converting to the range of 0 -> 1000 must be done post noise/filtering/etc as that code only works when the range is floats between -1 -> 1.
 
-        // Convert to int 0 -> 1000 // TODO: it seems that the filtering/noise process pushes the limits of the signal beyond 0 and 1000, and -1 to 1 when those are the ranges
+        // Convert to int 0 -> 1000 // it seems that the filtering/noise process pushes the limits of the signal beyond 0 and 1000, and -1 to 1 when those are the ranges
         if self.int_mode {
             data += 1 as f32; // -1 -> 1 to 0 -> 2
             data *= 500 as f32; // 0 -> 2 to 0 -> 1000
-            data = data.round(); // TODO: int mode should probably also get rid of the trailing decimal zero
+            data = data.round();
         }
 
         data
