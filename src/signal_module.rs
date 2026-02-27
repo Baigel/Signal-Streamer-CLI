@@ -66,6 +66,7 @@ impl Signal {
             self.signal_data.push(string_vector[0].parse::<f32>().expect("ERR: File contains non-int type"));
         }
 
+        // TODO: should be able to turn this autonormalizing off - that will break noise functionality and potentially some other stuff
         // Transform vector to range: -1 -> 1
         let max: f32 = self.signal_data.iter().copied().reduce(f32::max).expect("ERR: signal vector contained unexpected value");
         let min: f32 = self.signal_data.iter().copied().reduce(f32::min).expect("ERR: signal vector contained unexpected value");
