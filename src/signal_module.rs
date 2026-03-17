@@ -22,6 +22,7 @@ pub struct Signal {
     ms_delay: i32,
     skip_n: usize,
     int_mode: bool,
+	autonormalize: bool,
     // Filter vars
     lp_filter: Svf<f32>,
     hp_filter: Svf<f32>,
@@ -47,6 +48,7 @@ impl Signal {
             ms_delay: 5, // Default of 200 samples/s
             skip_n: 0,
             int_mode: true,
+			autonormalize: false,
             // Filters
             lp_filter: Svf::new(FilterType::Lowpass, 1000.0, 500.0, 0.771, 0.0).unwrap(),
             hp_filter: Svf::new(FilterType::Lowpass, 1000.0, 0.0, 0.771, 0.0).unwrap(),
@@ -67,11 +69,13 @@ impl Signal {
         }
 
         // TODO: should be able to turn this autonormalizing off - that will break noise functionality and potentially some other stuff
-        // Transform vector to range: -1 -> 1
-        let max: f32 = self.signal_data.iter().copied().reduce(f32::max).expect("ERR: signal vector contained unexpected value");
-        let min: f32 = self.signal_data.iter().copied().reduce(f32::min).expect("ERR: signal vector contained unexpected value");
-        self.signal_data = self.signal_data.iter().map(|x| (x - min) * 2.0 / (max - min) - 1.0).collect();
-
+		// TODO: i.e. Need to be able to transmit values exactly as they are recorded and the noise should be normalized to that level.
+		if self.autonormalize {
+			// Transform vector to range: -1 -> 1
+			let max: f32 = self.signal_data.iter().copied().reduce(f32::max).expect("ERR: signal vector contained unexpected value");
+			let min: f32 = self.signal_data.iter().copied().reduce(f32::min).expect("ERR: signal vector contained unexpected value");
+			self.signal_data = self.signal_data.iter().map(|x| (x - min) * 2.0 / (max - min) - 1.0).collect();
+		}
     }
 
     pub fn set_network_socket(&mut self, port: String) {
