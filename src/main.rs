@@ -41,6 +41,10 @@ struct Args {
     #[arg(long, default_value_t = 0)]
     hp_filter: i32,
 
+    /// Normalize (from -1 to 1, or 0 to 1000 in int mode)
+    #[arg(long, default_value_t = false)]
+    normalize: bool,
+
     /// Noise Level Percent (0 -> 100)
     #[arg(long, default_value_t = 0)]
     noise: i32,
@@ -59,6 +63,7 @@ async fn main() {
     signal.set_network_socket(args.port);
     signal.set_lp_filter(args.sample_f, args.lp_filter);
     signal.set_hp_filter(args.sample_f, args.hp_filter);
+	signal.set_normalize(args.normalize);
     signal.set_noise(args.noise);
     signal.set_sample_f(args.sample_f);
     signal.set_skip_n(args.skip_n);
