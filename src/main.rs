@@ -77,4 +77,15 @@ async fn main() {
         signal.transmit_data();
         interval.tick().await;
     }
+
+	/*
+	TODO
+	This method of intervals is not excellent. In my testing, having the
+	frequency set to 200 (i.e. 5ms gaps) leads to time intervals anywhere
+	between 0.5 ms up to 25 ms (although 99% are within 4-6 ms). The average
+	always remains very close to 5 ms however. I'm not sure that this is an
+	easily fixable problem however - when the system chooses to let the program
+	have CPU time is my current guess as to why the sample-to-sample timing can
+	be occasionally wildly off.
+	 */
 }
