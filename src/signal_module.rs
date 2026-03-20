@@ -5,11 +5,16 @@
  * AI Disclosure: No AI generated code present
 */
 
+use chrono::DateTime;
 use csv;
 use std::net::UdpSocket;
 use rand::prelude::*;
 use simper_filter::Svf;
 use simper_filter::FilterType;
+
+
+// Timing
+use chrono::Utc;
 
 pub struct Signal {
 	/* Private Members */
@@ -29,6 +34,7 @@ pub struct Signal {
 	// Noise vars
 	rand_rng: ThreadRng,
 	noise_level: i32,
+	noise_range: f32,
 }
 
 impl Signal {
@@ -54,6 +60,7 @@ impl Signal {
 			hp_filter: Svf::new(FilterType::Lowpass, 1000.0, 0.0, 0.771, 0.0).unwrap(),
 			// Noise vars
 			noise_level: 0,
+			noise_range: 0.0,
 			rand_rng: rand::rng(),
 		}
 	}
@@ -68,13 +75,17 @@ impl Signal {
 			self.signal_data.push(string_vector[0].parse::<f32>().expect("ERR: File contains non-int type"));
 		}
 
-		// TODO: should be able to turn this normalizing off - that will break noise functionality and potentially some other stuff
-		// TODO: i.e. Need to be able to transmit values exactly as they are recorded and the noise should be normalized to that level.
+		// Get max and min vals
+		let max: f32 = self.signal_data.iter().copied().reduce(f32::max).expect("ERR: signal vector contained unexpected value");
+		let min: f32 = self.signal_data.iter().copied().reduce(f32::min).expect("ERR: signal vector contained unexpected value");
+
+		// Calculate range for noise generation
+		self.noise_range = max - min;
+
 		if self.normalize {
 			// Transform vector to range: -1 -> 1
-			let max: f32 = self.signal_data.iter().copied().reduce(f32::max).expect("ERR: signal vector contained unexpected value");
-			let min: f32 = self.signal_data.iter().copied().reduce(f32::min).expect("ERR: signal vector contained unexpected value");
 			self.signal_data = self.signal_data.iter().map(|x| (x - min) * 2.0 / (max - min) - 1.0).collect();
+			self.noise_range = 2.0; // Change noise range to -1 -> 1
 		}
 	}
 
@@ -95,7 +106,7 @@ impl Signal {
 	
 	pub fn set_noise(&mut self, noise_level: i32) {
 		self.noise_level = noise_level;
-		println!("Noise Level:		{}", self.noise_level);
+		println!("Noise Level:		{}%", self.noise_level);
 	}
 
 	pub fn set_normalize(&mut self, normalize: bool) {
@@ -113,15 +124,18 @@ impl Signal {
 		println!("Skipping n samples:	{}", self.skip_n);
 	}
 
+	// TODO: add set_multiplier
+	// TODO: add set_offset
+
 	pub fn set_int_mode(&mut self, int_mode: bool) {
 		self.int_mode = int_mode;
 		if !self.normalize {
-			println!("Mode:		not normalized (raw values)")
+			println!("Mode:			not normalized (raw values)")
 		} else {
 			if int_mode {
-				println!("Mode:				 ints (0 -> 1000)");
+				println!("Mode:			ints (0 -> 1000)");
 			} else {
-				println!("Mode:				 floats (-1 -> 1)");
+				println!("Mode:			floats (-1 -> 1)");
 			}
 		}
 		if !self.normalize && self.int_mode {
@@ -141,12 +155,14 @@ impl Signal {
 	/* Private Function Definitions */
 
 	fn get_next_data(&mut self) -> f32 {
+		static mut time_record: chrono::DateTime<Utc> = chrono::DateTime::<chrono::Local>::MIN_UTC;
+
 		// Get Next data point
 		let mut data: f32 = self.signal_data[self.signal_index % self.signal_data.len()];
 		self.signal_index += 1 + self.skip_n; // Skip n samples every transmission
 
 		// Add noise
-		data = data + (self.rand_rng.random::<f32>() * 2.0 - 1.0) * (self.noise_level as f32) / 100.0;
+		data = data + (self.rand_rng.random::<f32>() * 2.0 - 1.0) * (self.noise_level as f32) / 100.0 * self.noise_range;
 
 		// Apple Filters
 		data = self.lp_filter.tick(data);
@@ -155,13 +171,20 @@ impl Signal {
 		// Order of operations note: converting to the range of 0 -> 1000 must be done post noise/filtering/etc as that code only works when the range is floats between -1 -> 1.
 
 		// Convert to int 0 -> 1000 // it seems that the filtering/noise process pushes the limits of the signal beyond 0 and 1000, and -1 to 1 when those are the ranges
-		if self.int_mode {
+		if self.int_mode && self.normalize { // Only run when conversion numbers are -1 -> 1
 			data += 1 as f32; // -1 -> 1 to 0 -> 2
 			data *= 500 as f32; // 0 -> 2 to 0 -> 1000
 			data = data.round();
 		}
 
+		unsafe {
+			let gap = Utc::now() - time_record;
+			println!("Timing gap: {}", gap);
+			time_record = Utc::now();
+		}
+
 		data
+
 	}
 
 }

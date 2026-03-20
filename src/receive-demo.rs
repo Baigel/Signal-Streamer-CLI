@@ -8,7 +8,7 @@
 // GUI Includes
 use eframe::egui;
 use std::sync::mpsc;
-use std::thread;
+use std::{thread, time};
 
 // Networking Includes
 use std::str::from_utf8;
