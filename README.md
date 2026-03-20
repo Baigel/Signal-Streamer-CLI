@@ -45,5 +45,5 @@ Options:
 ## Example
 Run the following commands in two separate terminals: (two demo scripts are provided for receiving, one in rust, the other in python)
 `cargo run --bin Signal-Streamer-CLI -- -f ./Test-Signal.csv --int-mode`\
-`cargo run --bin receive-demo`
-`python3 ./Python_Receive.py`
+`cargo run --bin receive-demo // rust option`
+`python3 ./Python_Receive.py // python option`
