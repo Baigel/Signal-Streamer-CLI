@@ -105,6 +105,9 @@ impl Signal {
 	pub fn set_noise(&mut self, noise_level: i32) {
 		self.noise_level = noise_level;
 		println!("Noise Level:		{}%", self.noise_level);
+		if self.normalize {
+			println!("WARNING: noise will push signal out of bounds. i.e. outside of -1->1 or 0->1000");
+		}
 	}
 
 	pub fn set_normalize(&mut self, normalize: bool) {
@@ -161,9 +164,20 @@ impl Signal {
 
 	fn get_next_data(&mut self) -> f32 {
 
+		// Note: the order of operations here is carefully chosen
+
 		// Get Next data point
 		let mut data: f32 = self.signal_data[self.signal_index % self.signal_data.len()];
-		self.signal_index += 1 + self.skip_n; // Skip n samples every transmission
+		
+		// Skip n samples every transmission by overincrementing index
+		self.signal_index += 1 + self.skip_n;
+		
+		// Convert to int 0 -> 1000
+		if self.int_mode && self.normalize { // Convert to int mode when appropriate
+			data += 1 as f32; // -1 -> 1 to 0 -> 2
+			data *= 500 as f32; // 0 -> 2 to 0 -> 1000
+			data = data.round();
+		}
 
 		// Apply multiplier
 		data = data * self.multiplier;
@@ -172,20 +186,11 @@ impl Signal {
 		data = data + self.offset;
 
 		// Add noise
-		data = data + (self.rand_rng.random::<f32>() * 2.0 - 1.0) * (self.noise_level as f32) / 100.0 * self.noise_range;
+		data = data + (self.noise_range * self.rand_rng.random::<f32>() * (self.noise_level as f32) / 100.0);
 
 		// Apple Filters
 		data = self.lp_filter.tick(data);
 		data = self.hp_filter.tick(data);
-
-		// Order of operations note: converting to the range of 0 -> 1000 must be done post noise/filtering/etc as that code only works when the range is floats between -1 -> 1.
-
-		// Convert to int 0 -> 1000 // it seems that the filtering/noise process pushes the limits of the signal beyond 0 and 1000, and -1 to 1 when those are the ranges
-		if self.int_mode && self.normalize { // Convert to int mode when appropriate
-			data += 1 as f32; // -1 -> 1 to 0 -> 2
-			data *= 500 as f32; // 0 -> 2 to 0 -> 1000
-			data = data.round();
-		}
 
 		data
 

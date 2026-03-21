@@ -90,7 +90,6 @@ async fn main() {
     }
 
 	/*
-	TODO
 	This method of intervals is not perfect. In my testing, having the
 	frequency set to 200 (i.e. 5ms gaps) leads to time intervals anywhere
 	between 0.5 ms up to 25 ms (although 99% are within 4-6 ms). The average
