@@ -23,6 +23,8 @@ pub struct Signal {
 	skip_n: usize,
 	int_mode: bool,
 	normalize: bool,
+	multiplier: f32,
+	offset: f32,
 	// Filter vars
 	lp_filter: Svf<f32>,
 	hp_filter: Svf<f32>,
@@ -50,6 +52,8 @@ impl Signal {
 			skip_n: 0,
 			int_mode: true,
 			normalize: false,
+			multiplier: 1.0,
+			offset: 0.0,
 			// Filters
 			lp_filter: Svf::new(FilterType::Lowpass, 1000.0, 500.0, 0.771, 0.0).unwrap(),
 			hp_filter: Svf::new(FilterType::Lowpass, 1000.0, 0.0, 0.771, 0.0).unwrap(),
@@ -62,7 +66,7 @@ impl Signal {
 
 	// Methods
 
-	pub fn read_csv_file(&mut self, file_name: String) { // TODO: need to add support for more separators
+	pub fn read_csv_file(&mut self, file_name: String) { // TODO: need to add support for more separators/file types
 		let mut rdr = csv::Reader::from_path(file_name).expect("ERR: Expected csv");
 		for result in rdr.records() {
 			let record: csv::StringRecord = result.expect("ERR: Expected csv");
@@ -119,8 +123,15 @@ impl Signal {
 		println!("Skipping n samples:	{}", self.skip_n);
 	}
 
-	// TODO: add set_multiplier
-	// TODO: add set_offset
+	pub fn set_multiplier(&mut self, multiplier: f32) {
+		self.multiplier = multiplier;
+		println!("Multiplier:		{}", self.multiplier);
+	}
+
+	pub fn set_offset(&mut self, offset: f32) {
+		self.offset = offset;
+		println!("Offset:			{}", self.offset);
+	}
 
 	pub fn set_int_mode(&mut self, int_mode: bool) {
 		self.int_mode = int_mode;
@@ -155,6 +166,12 @@ impl Signal {
 		let mut data: f32 = self.signal_data[self.signal_index % self.signal_data.len()];
 		self.signal_index += 1 + self.skip_n; // Skip n samples every transmission
 
+		// Apply multiplier
+		data = data * self.multiplier;
+		
+		// Apply offset
+		data = data + self.offset;
+
 		// Add noise
 		data = data + (self.rand_rng.random::<f32>() * 2.0 - 1.0) * (self.noise_level as f32) / 100.0 * self.noise_range;
 
@@ -165,12 +182,11 @@ impl Signal {
 		// Order of operations note: converting to the range of 0 -> 1000 must be done post noise/filtering/etc as that code only works when the range is floats between -1 -> 1.
 
 		// Convert to int 0 -> 1000 // it seems that the filtering/noise process pushes the limits of the signal beyond 0 and 1000, and -1 to 1 when those are the ranges
-		if self.int_mode && self.normalize { // Only run when conversion numbers are -1 -> 1
+		if self.int_mode && self.normalize { // Convert to int mode when appropriate
 			data += 1 as f32; // -1 -> 1 to 0 -> 2
 			data *= 500 as f32; // 0 -> 2 to 0 -> 1000
 			data = data.round();
 		}
-
 
 		data
 
@@ -179,7 +195,6 @@ impl Signal {
 }
 
 /*
-
 // Timing
 use chrono::Utc;
 use chrono::DateTime;
