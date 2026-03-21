@@ -5,16 +5,11 @@
  * AI Disclosure: No AI generated code present
 */
 
-use chrono::DateTime;
 use csv;
 use std::net::UdpSocket;
 use rand::prelude::*;
 use simper_filter::Svf;
 use simper_filter::FilterType;
-
-
-// Timing
-use chrono::Utc;
 
 pub struct Signal {
 	/* Private Members */
@@ -155,10 +150,6 @@ impl Signal {
 	/* Private Function Definitions */
 
 	fn get_next_data(&mut self) -> f32 {
-		static mut time_record: chrono::DateTime<Utc> = chrono::DateTime::<chrono::Local>::MIN_UTC;
-		static mut record_max: chrono::TimeDelta = chrono::TimeDelta::microseconds(0);
-		static mut record_min: chrono::TimeDelta = chrono::TimeDelta::microseconds(100000);
-		static mut time_record_buffer: [i32; 100] = [0; 100];
 
 		// Get Next data point
 		let mut data: f32 = self.signal_data[self.signal_index % self.signal_data.len()];
@@ -180,27 +171,6 @@ impl Signal {
 			data = data.round();
 		}
 
-		unsafe {
-			let gap = Utc::now() - time_record;
-			if gap > chrono::TimeDelta::microseconds(1000) && gap < chrono::TimeDelta::microseconds(100000) {
-				if gap > record_max {
-					record_max = gap;
-				}
-				if gap < record_min {
-					record_min = gap;
-				}
-			}
-			let max = record_max;
-			let min = record_min;
-			for num in (0..99).rev() {
-				time_record_buffer[num + 1] = time_record_buffer[num];
-			}
-			time_record_buffer[0] = gap.num_microseconds().unwrap() as i32;
-			let time_record_buffer_dup = time_record_buffer;
-			let sum = time_record_buffer_dup.iter().sum::<i32>();
-			println!("Timing gap: {}, max: {}, min: {}, avg: {}", gap.num_microseconds().unwrap(), max.num_microseconds().unwrap(), min.num_microseconds().unwrap(), sum / 100);
-			time_record = Utc::now();
-		}
 
 		data
 
@@ -208,3 +178,36 @@ impl Signal {
 
 }
 
+/*
+
+// Timing
+use chrono::Utc;
+use chrono::DateTime;
+
+	static mut time_record: chrono::DateTime<Utc> = chrono::DateTime::<chrono::Local>::MIN_UTC;
+	static mut record_max: chrono::TimeDelta = chrono::TimeDelta::microseconds(0);
+	static mut record_min: chrono::TimeDelta = chrono::TimeDelta::microseconds(100000);
+	static mut time_record_buffer: [i32; 100] = [0; 100];
+
+	unsafe {
+		let gap = Utc::now() - time_record;
+		if gap > chrono::TimeDelta::microseconds(1000) && gap < chrono::TimeDelta::microseconds(100000) {
+			if gap > record_max {
+				record_max = gap;
+			}
+			if gap < record_min {
+				record_min = gap;
+			}
+		}
+		let max = record_max;
+		let min = record_min;
+		for num in (0..99).rev() {
+			time_record_buffer[num + 1] = time_record_buffer[num];
+		}
+		time_record_buffer[0] = gap.num_microseconds().unwrap() as i32;
+		let time_record_buffer_dup = time_record_buffer;
+		let sum = time_record_buffer_dup.iter().sum::<i32>();
+		println!("Timing gap: {}, max: {}, min: {}, avg: {}", gap.num_microseconds().unwrap(), max.num_microseconds().unwrap(), min.num_microseconds().unwrap(), sum / 100);
+		time_record = Utc::now();
+	}
+*/
